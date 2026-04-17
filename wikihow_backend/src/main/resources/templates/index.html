@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World - WikiHow</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 50px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .message {
+            color: #666;
+            font-size: 18px;
+            margin: 20px 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        .api-response {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 Hello World!</h1>
+        <p class="message">欢迎来到 WikiHow 项目</p>
+        <p class="message">项目已成功启动并运行！</p>
+        <button onclick="testApi()">测试 API 接口</button>
+        <div class="api-response" id="apiResponse"></div>
+    </div>
+
+    <script>
+        function testApi() {
+            fetch('/api/hello')
+                .then(response => response.text())
+                .then(data => {
+                    const responseDiv = document.getElementById('apiResponse');
+                    responseDiv.textContent = '✅ API 响应: ' + data;
+                    responseDiv.style.display = 'block';
+                })
+                .catch(error => {
+                    const responseDiv = document.getElementById('apiResponse');
+                    responseDiv.textContent = '❌ 错误: ' + error;
+                    responseDiv.style.display = 'block';
+                });
+        }
+    </script>
+</body>
+</html>
