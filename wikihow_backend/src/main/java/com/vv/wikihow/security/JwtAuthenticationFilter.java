@@ -66,7 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(request, response);
         } finally {
-            // 清理上下文
+            // 清理上下文.
             UserContext.clear();
             SecurityContextHolder.clearContext();
         }
