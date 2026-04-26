@@ -105,10 +105,12 @@ const handleLogin = async () => {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
 }
 
 .login-card {
   width: 400px;
+  max-width: 100%;
 }
 
 .login-title {
@@ -120,10 +122,44 @@ const handleLogin = async () => {
 .login-footer {
   text-align: center;
   color: #666;
+  margin-top: 8px;
 }
 
 .login-footer a {
   color: #409eff;
   text-decoration: none;
+  font-weight: 500;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 60px;
+  }
+
+  .login-card {
+    width: 100%;
+  }
+
+  .login-card :deep(.el-card__header) {
+    padding: 16px;
+  }
+
+  .login-card :deep(.el-card__body) {
+    padding: 20px 16px;
+  }
+
+  .login-title {
+    font-size: 22px;
+  }
+
+  .login-footer {
+    font-size: 14px;
+  }
 }
 </style>

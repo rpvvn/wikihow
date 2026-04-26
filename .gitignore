@@ -19,6 +19,10 @@ target/
 *.iml
 *.ipr
 
+# Kiro 工具目录
+.kiro/
+docs/
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/

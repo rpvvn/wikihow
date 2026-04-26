@@ -45,10 +45,11 @@ public interface OutdatedReportService {
      * @param reportId 举报记录ID
      * @param handlerId 处理人ID
      * @param status 处理结果: 1已处理/2已忽略
+     * @param handleType 处理类型: 1标记过时/2删除文章（当status=1时需要）
      * @param comment 处理备注
-     * @param outdatedReason 过时原因（当标记过时时需要）
+     * @param reason 过时原因或删除原因（当status=1时需要）
      */
-    void handleReport(Long reportId, Long handlerId, Integer status, String comment, String outdatedReason);
+    void handleReport(Long reportId, Long handlerId, Integer status, Integer handleType, String comment, String reason);
 
     /**
      * 获取举报详情
@@ -70,4 +71,20 @@ public interface OutdatedReportService {
      * @param reportId 举报记录ID
      */
     void deleteReport(Long reportId);
+
+    /**
+     * 作者申请复核（移除过时标记）
+     * @param articleId 文章ID
+     * @param userId 作者ID
+     * @param reason 申请原因
+     */
+    void requestReview(Long articleId, Long userId, String reason);
+
+    /**
+     * 检查文章是否有待处理的复核申请
+     * @param articleId 文章ID
+     * @param userId 用户ID
+     * @return 是否有待处理的复核申请
+     */
+    boolean hasPendingReview(Long articleId, Long userId);
 }

@@ -72,6 +72,38 @@ public interface NotificationService {
     void sendArticleOfflineNotification(Long userId, String articleTitle, String reason);
 
     /**
+     * 发送违规删除通知
+     * @param userId 接收用户ID（文章作者）
+     * @param articleTitle 文章标题
+     * @param reason 删除原因
+     */
+    void sendArticleDeletedNotification(Long userId, String articleTitle, String reason);
+
+    /**
+     * 发送复核通过通知
+     * @param userId 接收用户ID（文章作者）
+     * @param articleTitle 文章标题
+     * @param comment 审核意见
+     */
+    void sendReviewApprovedNotification(Long userId, String articleTitle, String comment);
+
+    /**
+     * 发送复核拒绝通知
+     * @param userId 接收用户ID（文章作者）
+     * @param articleTitle 文章标题
+     * @param comment 拒绝原因
+     */
+    void sendReviewRejectedNotification(Long userId, String articleTitle, String comment);
+
+    /**
+     * 发送文章恢复通知（已下架文章复核通过后恢复发布）
+     * @param userId 接收用户ID（文章作者）
+     * @param articleTitle 文章标题
+     * @param comment 审核意见
+     */
+    void sendArticleRestoredNotification(Long userId, String articleTitle, String comment);
+
+    /**
      * 发送评论通知（当用户的文章被评论时）
      * @param authorId 文章作者ID（接收通知）
      * @param commenterId 评论者ID

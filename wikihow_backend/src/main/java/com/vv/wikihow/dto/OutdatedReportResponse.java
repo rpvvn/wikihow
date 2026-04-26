@@ -65,6 +65,16 @@ public class OutdatedReportResponse {
     private String reason;
     
     /**
+     * 举报类型: 0=过时举报/1=复核申请
+     */
+    private Integer reportType;
+    
+    /**
+     * 举报类型文本
+     */
+    private String reportTypeText;
+    
+    /**
      * 处理状态: 0待处理/1已处理/2已忽略
      */
     private Integer status;

@@ -1,60 +1,59 @@
-<template>
+﻿<template>
   <footer class="app-footer">
     <div class="footer-content">
-      <!-- 左侧区域 -->
-      <div class="footer-left">
+      <section class="brand-zone">
         <router-link to="/" class="footer-logo">
           <span class="logo-wiki">wiki</span><span class="logo-how">How</span>
         </router-link>
-        
-        <div class="footer-search">
+        <p class="footer-note">让每个人都能把复杂问题拆解成可执行步骤。</p>
+
+        <div class="footer-search glass-panel">
           <input
             v-model="searchKeyword"
             type="text"
-            placeholder="Search how to..."
+            placeholder="继续搜索想学的内容..."
             @keyup.enter="handleSearch"
           />
-          <el-icon class="search-icon"><Search /></el-icon>
+          <button class="search-btn" @click="handleSearch" aria-label="footer-search">
+            <el-icon><Search /></el-icon>
+          </button>
         </div>
-        
-        <div class="social-links">
-          <a href="#" class="social-link" title="关注我们">
-            <el-icon><Share /></el-icon>
-          </a>
-          <a href="#" class="social-link" title="微博">
-            <el-icon><ChatDotRound /></el-icon>
-          </a>
-          <a href="#" class="social-link" title="微信">
-            <el-icon><ChatLineSquare /></el-icon>
-          </a>
-          <a href="#" class="social-link" title="QQ">
-            <el-icon><Service /></el-icon>
-          </a>
-          <a href="#" class="social-link" title="邮箱">
-            <el-icon><Message /></el-icon>
-          </a>
-        </div>
-      </div>
-      
-      <!-- 中间链接区域 -->
-      <div class="footer-links">
+      </section>
+
+      <section class="link-zone">
         <div class="link-column">
+          <h4>探索</h4>
           <router-link to="/">首页</router-link>
-          <router-link to="/about">关于我们</router-link>
+          <router-link to="/search">文章搜索</router-link>
           <router-link to="/experts">专家团队</router-link>
-          <router-link to="/jobs">加入我们</router-link>
-          <router-link to="/contact">联系我们</router-link>
-        </div>
-        <div class="link-column">
-          <router-link to="/sitemap">网站地图</router-link>
-          <router-link to="/terms">使用条款</router-link>
-          <router-link to="/privacy">隐私政策</router-link>
           <router-link to="/contribute">投稿指南</router-link>
         </div>
-      </div>
+        <div class="link-column">
+          <h4>支持</h4>
+          <router-link to="/about">关于我们</router-link>
+          <router-link to="/contact">联系我们</router-link>
+          <router-link to="/jobs">加入我们</router-link>
+          <router-link to="/sitemap">网站地图</router-link>
+        </div>
+        <div class="link-column">
+          <h4>条款</h4>
+          <router-link to="/terms">使用条款</router-link>
+          <router-link to="/privacy">隐私政策</router-link>
+        </div>
+      </section>
+
+      <section class="social-zone">
+        <h4>关注我们</h4>
+        <div class="social-links">
+          <a href="#" class="social-link" title="分享"><el-icon><Share /></el-icon></a>
+          <a href="#" class="social-link" title="社区"><el-icon><ChatDotRound /></el-icon></a>
+          <a href="#" class="social-link" title="微信"><el-icon><ChatLineSquare /></el-icon></a>
+          <a href="#" class="social-link" title="客服"><el-icon><Service /></el-icon></a>
+          <a href="#" class="social-link" title="邮箱"><el-icon><Message /></el-icon></a>
+        </div>
+      </section>
     </div>
-    
-    <!-- 底部版权 -->
+
     <div class="footer-bottom">
       <p>© {{ currentYear }} WikiHow 知识库. All rights reserved.</p>
     </div>
@@ -68,164 +67,264 @@ import { Search, Share, ChatDotRound, ChatLineSquare, Service, Message } from '@
 
 const router = useRouter()
 const searchKeyword = ref('')
-
 const currentYear = computed(() => new Date().getFullYear())
 
 const handleSearch = () => {
-  if (searchKeyword.value.trim()) {
-    router.push({ path: '/search', query: { keyword: searchKeyword.value } })
-  }
+  if (!searchKeyword.value.trim()) return
+  router.push({ path: '/search', query: { keyword: searchKeyword.value } })
 }
 </script>
 
 <style scoped>
 .app-footer {
-  background: #93b874;
-  padding: 40px 0 0;
   margin-top: auto;
+  border-top: 1px solid rgba(194, 217, 201, 0.8);
+  background: linear-gradient(180deg, rgba(244, 250, 246, 0.9) 0%, #eef6f1 100%);
 }
 
 .footer-content {
-  max-width: 1200px;
+  width: min(1320px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 0 20px;
-  display: flex;
-  justify-content: space-between;
-  gap: 60px;
-}
-
-/* 左侧区域 */
-.footer-left {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  padding: 42px 0 28px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.8fr;
+  gap: 32px;
 }
 
 .footer-logo {
-  text-decoration: none;
-  display: inline-block;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.logo-wiki,
+.logo-how {
+  font-size: 34px;
+  line-height: 1;
 }
 
 .logo-wiki {
-  font-size: 32px;
-  font-weight: bold;
-  color: #fff;
+  color: var(--brand-700);
+  font-weight: 800;
 }
 
 .logo-how {
-  font-size: 32px;
-  font-weight: 300;
-  color: #fff;
+  color: var(--brand-500);
+  font-weight: 500;
 }
 
-/* 搜索框 */
+.footer-note {
+  margin-top: 12px;
+  max-width: 380px;
+  color: var(--ink-500);
+}
+
 .footer-search {
-  position: relative;
-  width: 280px;
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  border-radius: 999px;
+  overflow: hidden;
 }
 
 .footer-search input {
-  width: 100%;
-  padding: 10px 40px 10px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 4px;
-  background: transparent;
-  color: #fff;
-  font-size: 14px;
+  border: none;
   outline: none;
+  background: transparent;
+  padding: 11px 14px;
+  flex: 1;
+  color: var(--ink-700);
 }
 
-.footer-search input::placeholder {
-  color: rgba(255, 255, 255, 0.7);
+.search-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--brand-500);
+  margin-right: 3px;
+  border-radius: 999px;
+  cursor: pointer;
 }
 
-.footer-search input:focus {
-  border-color: #fff;
+.search-btn:hover {
+  background: rgba(89, 168, 116, 0.14);
 }
 
-.search-icon {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 18px;
-}
-
-/* 社交链接 */
-.social-links {
-  display: flex;
-  gap: 8px;
-}
-
-.social-link {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  text-decoration: none;
-  transition: background 0.2s;
-}
-
-.social-link:hover {
-  background: rgba(0, 0, 0, 0.4);
-}
-
-/* 链接区域 */
-.footer-links {
-  display: flex;
-  gap: 80px;
+.link-zone {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .link-column {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 9px;
+}
+
+.link-column h4,
+.social-zone h4 {
+  font-size: 15px;
+  color: var(--ink-700);
+  margin-bottom: 6px;
 }
 
 .link-column a {
-  color: #fff;
-  text-decoration: none;
-  font-size: 14px;
-  transition: opacity 0.2s;
+  color: var(--ink-500);
+  transition: color 0.2s ease;
 }
 
 .link-column a:hover {
-  opacity: 0.8;
-  text-decoration: underline;
+  color: var(--brand-500);
 }
 
-/* 底部版权 */
+.social-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.social-link {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(158, 191, 169, 0.78);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink-700);
+  display: grid;
+  place-items: center;
+  transition: all 0.2s ease;
+}
+
+.social-link:hover {
+  transform: translateY(-2px);
+  border-color: rgba(95, 155, 117, 0.7);
+  color: var(--brand-500);
+}
+
 .footer-bottom {
-  margin-top: 40px;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(197, 217, 203, 0.8);
   text-align: center;
+  padding: 14px 20px 18px;
 }
 
 .footer-bottom p {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--ink-500);
   font-size: 13px;
-  margin: 0;
 }
 
-/* 响应式 */
-@media (max-width: 768px) {
+@media (max-width: 980px) {
   .footer-content {
-    flex-direction: column;
-    gap: 30px;
+    grid-template-columns: 1fr;
+    gap: 26px;
   }
-  
-  .footer-links {
-    gap: 40px;
+
+  .footer-note {
+    max-width: none;
   }
-  
+
+  .link-zone {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .footer-content {
+    width: calc(100% - 24px);
+    padding-top: 34px;
+  }
+
   .footer-search {
-    width: 100%;
+    max-width: 100%;
+  }
+
+  .footer-search input {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .link-zone {
+    grid-template-columns: 1fr;
+  }
+
+  .logo-wiki,
+  .logo-how {
+    font-size: 30px;
+  }
+
+  .social-zone h4 {
+    margin-top: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-content {
+    padding: 24px 0 18px;
+    gap: 20px;
+  }
+
+  .brand-zone {
+    text-align: center;
+  }
+
+  .footer-logo {
+    justify-content: center;
+  }
+
+  .footer-note {
+    font-size: 14px;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  .footer-search {
+    margin-top: 14px;
+  }
+
+  .footer-search input {
+    font-size: 13px;
+    padding: 9px 12px;
+  }
+
+  .search-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .link-zone {
+    display: none;
+  }
+
+  .social-zone {
+    margin-top: -4px;
+    text-align: center;
+  }
+
+  .social-zone h4 {
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .social-links {
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .social-link {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+  }
+
+  .footer-bottom {
+    padding: 12px 16px 16px;
+  }
+
+  .footer-bottom p {
+    font-size: 11px;
+    line-height: 1.6;
+    word-break: break-word;
   }
 }
 </style>

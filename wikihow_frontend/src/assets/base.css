@@ -1,17 +1,26 @@
-/* 基础样式 */
+﻿@import url(''https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap'');
+
 :root {
-  --color-primary: #409eff;
-  --color-success: #67c23a;
-  --color-warning: #e6a23c;
-  --color-danger: #f56c6c;
-  --color-info: #909399;
-  
-  --color-text-primary: #303133;
-  --color-text-regular: #606266;
-  --color-text-secondary: #909399;
-  
-  --color-background: #ffffff;
-  --color-background-soft: #f5f7fa;
+  --brand-50: #f2f9f4;
+  --brand-100: #dff1e4;
+  --brand-400: #59a874;
+  --brand-500: #3f8f5e;
+  --brand-700: #24563a;
+  --ink-900: #132319;
+  --ink-700: #324638;
+  --ink-500: #58705f;
+  --line-200: #dce8df;
+  --surface-0: #ffffff;
+  --surface-1: #f7fbf8;
+  --surface-2: #edf5ef;
+  --warning: #f8a53f;
+  --danger: #f16767;
+
+  --shadow-soft: 0 14px 36px rgba(28, 63, 42, 0.08);
+  --shadow-hover: 0 20px 44px rgba(28, 63, 42, 0.14);
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
 }
 
 *,
@@ -22,16 +31,21 @@
   padding: 0;
 }
 
-html, body, #app {
+html,
+body,
+#app {
   width: 100%;
   min-height: 100vh;
 }
 
 body {
-  color: var(--color-text-primary);
-  background: var(--color-background);
-  line-height: 1.6;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: var(--ink-900);
+  background:
+    radial-gradient(circle at 6% -10%, rgba(133, 203, 157, 0.2), transparent 34%),
+    radial-gradient(circle at 95% 12%, rgba(78, 144, 104, 0.18), transparent 28%),
+    linear-gradient(160deg, #f6fbf8 0%, #f3f8f4 45%, #eef5f0 100%);
+  line-height: 1.65;
+  font-family: 'Manrope', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

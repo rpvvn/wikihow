@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.vv.wikihow.common.Result;
 import com.vv.wikihow.dto.ArticleListResponse;
+import com.vv.wikihow.dto.DashboardStatsResponse;
 import com.vv.wikihow.dto.PageResponse;
 import com.vv.wikihow.entity.*;
 import com.vv.wikihow.mapper.*;
@@ -17,6 +18,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +107,121 @@ public class AdminController {
         stats.put("categoryCount", categoryMapper.selectCount(null));
         stats.put("commentCount", commentMapper.selectCount(null));
         return Result.success(stats);
+    }
+
+    /**
+     * 获取详细统计数据（数据概览页面）
+     */
+    @GetMapping("/dashboard-stats")
+    public Result<DashboardStatsResponse> getDashboardStats() {
+        DashboardStatsResponse stats = new DashboardStatsResponse();
+        
+        // 基础统计
+        stats.setUserCount(userMapper.selectCount(null));
+        stats.setArticleCount(articleMapper.selectCount(null));
+        stats.setCategoryCount(categoryMapper.selectCount(null));
+        stats.setCommentCount(commentMapper.selectCount(null));
+        
+        // 文章状态统计
+        stats.setDraftCount(articleMapper.selectCount(
+            new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0)));
+        stats.setPendingCount(articleMapper.selectCount(
+            new LambdaQueryWrapper<Article>().eq(Article::getStatus, 1)));
+        stats.setPublishedCount(articleMapper.selectCount(
+            new LambdaQueryWrapper<Article>().eq(Article::getStatus, 2)));
+        stats.setRejectedCount(articleMapper.selectCount(
+            new LambdaQueryWrapper<Article>().eq(Article::getStatus, 3)));
+        stats.setOfflineCount(articleMapper.selectCount(
+            new LambdaQueryWrapper<Article>().eq(Article::getStatus, 4)));
+        stats.setOutdatedCount(articleMapper.selectCount(
+            new LambdaQueryWrapper<Article>().eq(Article::getIsOutdated, 1)));
+        
+        // 文章状态分布（饼图数据）
+        stats.setArticleStatusChart(List.of(
+            new DashboardStatsResponse.PieChartData("草稿", stats.getDraftCount()),
+            new DashboardStatsResponse.PieChartData("待审核", stats.getPendingCount()),
+            new DashboardStatsResponse.PieChartData("已发布", stats.getPublishedCount()),
+            new DashboardStatsResponse.PieChartData("已拒绝", stats.getRejectedCount()),
+            new DashboardStatsResponse.PieChartData("已下架", stats.getOfflineCount())
+        ));
+        
+        // 最近7天文章发布趋势
+        List<DashboardStatsResponse.LineChartData> articleTrend = getArticleTrendData();
+        stats.setArticleTrendChart(articleTrend);
+        
+        // 最近7天用户注册趋势
+        List<DashboardStatsResponse.LineChartData> userTrend = getUserTrendData();
+        stats.setUserTrendChart(userTrend);
+        
+        // 分类文章数量统计
+        List<DashboardStatsResponse.BarChartData> categoryData = getCategoryStatsData();
+        stats.setCategoryChart(categoryData);
+        
+        return Result.success(stats);
+    }
+    
+    /**
+     * 获取最近7天文章发布趋势数据
+     */
+    private List<DashboardStatsResponse.LineChartData> getArticleTrendData() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd");
+        return LocalDate.now().minusDays(6).datesUntil(LocalDate.now().plusDays(1))
+                .map(date -> {
+                    LocalDateTime startOfDay = date.atStartOfDay();
+                    LocalDateTime endOfDay = date.atTime(23, 59, 59);
+                    
+                    Long count = articleMapper.selectCount(
+                        new LambdaQueryWrapper<Article>()
+                            .between(Article::getCreatedAt, startOfDay, endOfDay)
+                    );
+                    
+                    return new DashboardStatsResponse.LineChartData(
+                        date.format(formatter), count);
+                })
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 获取最近7天用户注册趋势数据
+     */
+    private List<DashboardStatsResponse.LineChartData> getUserTrendData() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd");
+        return LocalDate.now().minusDays(6).datesUntil(LocalDate.now().plusDays(1))
+                .map(date -> {
+                    LocalDateTime startOfDay = date.atStartOfDay();
+                    LocalDateTime endOfDay = date.atTime(23, 59, 59);
+                    
+                    Long count = userMapper.selectCount(
+                        new LambdaQueryWrapper<User>()
+                            .between(User::getCreatedAt, startOfDay, endOfDay)
+                    );
+                    
+                    return new DashboardStatsResponse.LineChartData(
+                        date.format(formatter), count);
+                })
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 获取分类文章数量统计数据
+     */
+    private List<DashboardStatsResponse.BarChartData> getCategoryStatsData() {
+        List<Category> categories = categoryMapper.selectList(
+            new LambdaQueryWrapper<Category>()
+                .isNull(Category::getParentId)
+                .orderByAsc(Category::getSortOrder)
+        );
+        
+        return categories.stream()
+                .map(category -> {
+                    Long count = articleMapper.selectCount(
+                        new LambdaQueryWrapper<Article>()
+                            .eq(Article::getCategoryId, category.getId())
+                            .eq(Article::getStatus, 2) // 只统计已发布的文章
+                    );
+                    return new DashboardStatsResponse.BarChartData(category.getName(), count);
+                })
+                .collect(Collectors.toList());
     }
 
     /**

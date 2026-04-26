@@ -179,6 +179,58 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    public void sendArticleDeletedNotification(Long userId, String articleTitle, String reason) {
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setSenderId(null); // 系统通知
+        notification.setTitle("文章因违规已被删除");
+        notification.setContent("您的文章《" + articleTitle + "》因违规内容已被删除。" + 
+                (reason != null && !reason.isEmpty() ? " 原因：" + reason : " 如有疑问，请联系管理员。"));
+        notification.setType("DELETED");
+        notification.setIsRead(0);
+        notificationMapper.insert(notification);
+    }
+
+    @Override
+    public void sendReviewApprovedNotification(Long userId, String articleTitle, String comment) {
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setSenderId(null); // 系统通知
+        notification.setTitle("复核申请已通过");
+        notification.setContent("恭喜！您的文章《" + articleTitle + "》的复核申请已通过，过时标记已移除。" + 
+                (comment != null && !comment.isEmpty() ? " 审核意见：" + comment : ""));
+        notification.setType("REVIEW_APPROVED");
+        notification.setIsRead(0);
+        notificationMapper.insert(notification);
+    }
+
+    @Override
+    public void sendReviewRejectedNotification(Long userId, String articleTitle, String comment) {
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setSenderId(null); // 系统通知
+        notification.setTitle("复核申请未通过");
+        notification.setContent("很抱歉，您的文章《" + articleTitle + "》的复核申请未通过。" + 
+                (comment != null && !comment.isEmpty() ? " 原因：" + comment : " 请继续完善文章内容后重新申请。"));
+        notification.setType("REVIEW_REJECTED");
+        notification.setIsRead(0);
+        notificationMapper.insert(notification);
+    }
+
+    @Override
+    public void sendArticleRestoredNotification(Long userId, String articleTitle, String comment) {
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setSenderId(null); // 系统通知
+        notification.setTitle("文章已恢复发布");
+        notification.setContent("恭喜！您的文章《" + articleTitle + "》的复核申请已通过，文章已恢复发布。" + 
+                (comment != null && !comment.isEmpty() ? " 审核意见：" + comment : ""));
+        notification.setType("ARTICLE_RESTORED");
+        notification.setIsRead(0);
+        notificationMapper.insert(notification);
+    }
+
+    @Override
     public void sendCommentNotification(Long authorId, Long commenterId, String articleTitle, Long articleId, Long commentId, String commentContent) {
         // 获取评论者信息
         User commenter = userMapper.selectById(commenterId);

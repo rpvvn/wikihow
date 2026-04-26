@@ -30,9 +30,19 @@ public class OutdatedReport {
     private String reason;
 
     /**
+     * 举报类型: 0=过时举报, 1=复核申请
+     */
+    private Integer reportType;
+
+    /**
      * 处理状态: 0待处理/1已处理/2已忽略
      */
     private Integer status;
+
+    /**
+     * 处理类型: 1标记过时/2删除文章
+     */
+    private Integer handleType;
 
     /**
      * 处理人ID
@@ -58,4 +68,12 @@ public class OutdatedReport {
     public static final int STATUS_PENDING = 0;
     public static final int STATUS_HANDLED = 1;
     public static final int STATUS_IGNORED = 2;
+
+    // 举报类型常量
+    public static final int REPORT_TYPE_OUTDATED = 0;  // 过时举报
+    public static final int REPORT_TYPE_REVIEW = 1;    // 复核申请
+
+    // 处理类型常量
+    public static final int HANDLE_TYPE_MARK_OUTDATED = 1;
+    public static final int HANDLE_TYPE_DELETE_ARTICLE = 2;
 }

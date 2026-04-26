@@ -1,7 +1,10 @@
 <template>
   <div class="admin-layout">
+    <!-- 移动端遮罩 -->
+    <div v-show="mobileSidebarOpen" class="sidebar-overlay" @click="mobileSidebarOpen = false"></div>
+
     <!-- 侧边栏 -->
-    <aside class="admin-sidebar">
+    <aside class="admin-sidebar" :class="{ 'mobile-open': mobileSidebarOpen }">
       <div class="sidebar-header">
         <router-link to="/" class="logo">
           <span class="logo-wiki">wiki</span><span class="logo-how">How</span>
@@ -10,35 +13,35 @@
       </div>
       
       <nav class="sidebar-nav">
-        <router-link v-if="userStore.isAdmin" to="/admin/dashboard" class="nav-item" :class="{ active: currentRoute === 'dashboard' }">
+        <router-link v-if="userStore.isAdmin" to="/admin/dashboard" class="nav-item" :class="{ active: currentRoute === 'dashboard' }" @click="closeMobileSidebar">
           <el-icon><DataAnalysis /></el-icon>
           <span>数据概览</span>
         </router-link>
-        <router-link v-if="userStore.isAdmin" to="/admin/users" class="nav-item" :class="{ active: currentRoute === 'users' }">
+        <router-link v-if="userStore.isAdmin" to="/admin/users" class="nav-item" :class="{ active: currentRoute === 'users' }" @click="closeMobileSidebar">
           <el-icon><User /></el-icon>
           <span>用户管理</span>
         </router-link>
-        <router-link v-if="userStore.isAdmin" to="/admin/articles" class="nav-item" :class="{ active: currentRoute === 'articles' }">
+        <router-link v-if="userStore.isAdmin" to="/admin/articles" class="nav-item" :class="{ active: currentRoute === 'articles' }" @click="closeMobileSidebar">
           <el-icon><Document /></el-icon>
           <span>文章管理</span>
         </router-link>
-        <router-link v-if="userStore.isAdmin" to="/admin/categories" class="nav-item" :class="{ active: currentRoute === 'categories' }">
+        <router-link v-if="userStore.isAdmin" to="/admin/categories" class="nav-item" :class="{ active: currentRoute === 'categories' }" @click="closeMobileSidebar">
           <el-icon><Menu /></el-icon>
           <span>分类管理</span>
         </router-link>
-        <router-link v-if="userStore.isAdmin" to="/admin/comments" class="nav-item" :class="{ active: currentRoute === 'comments' }">
+        <router-link v-if="userStore.isAdmin" to="/admin/comments" class="nav-item" :class="{ active: currentRoute === 'comments' }" @click="closeMobileSidebar">
           <el-icon><ChatDotRound /></el-icon>
           <span>评论管理</span>
         </router-link>
-        <router-link v-if="userStore.isAdmin" to="/admin/notifications" class="nav-item" :class="{ active: currentRoute === 'notifications' }">
+        <router-link v-if="userStore.isAdmin" to="/admin/notifications" class="nav-item" :class="{ active: currentRoute === 'notifications' }" @click="closeMobileSidebar">
           <el-icon><Bell /></el-icon>
           <span>通知管理</span>
         </router-link>
-        <router-link v-if="userStore.canReview" to="/admin/reviews" class="nav-item" :class="{ active: currentRoute === 'reviews' }">
+        <router-link v-if="userStore.canReview" to="/admin/reviews" class="nav-item" :class="{ active: currentRoute === 'reviews' }" @click="closeMobileSidebar">
           <el-icon><Checked /></el-icon>
           <span>审核管理</span>
         </router-link>
-        <router-link v-if="userStore.canReview" to="/admin/outdated-reports" class="nav-item" :class="{ active: currentRoute === 'outdated-reports' }">
+        <router-link v-if="userStore.canReview" to="/admin/outdated-reports" class="nav-item" :class="{ active: currentRoute === 'outdated-reports' }" @click="closeMobileSidebar">
           <el-icon><WarningFilled /></el-icon>
           <span>过时举报</span>
         </router-link>
@@ -63,9 +66,15 @@
     <!-- 主内容区 -->
     <main class="admin-main">
       <header class="admin-header">
-        <h1>{{ pageTitle }}</h1>
+        <div class="header-left">
+          <button class="menu-toggle" @click="mobileSidebarOpen = !mobileSidebarOpen">
+            <el-icon><Operation /></el-icon>
+          </button>
+          <h1>{{ pageTitle }}</h1>
+        </div>
         <router-link to="/" class="back-link">
-          <el-icon><Back /></el-icon> 返回前台
+          <el-icon><Back /></el-icon> 
+          <span class="back-text">返回前台</span>
         </router-link>
       </header>
       <div class="admin-content">
@@ -76,15 +85,20 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { DataAnalysis, User, Document, Menu, ChatDotRound, Bell, SwitchButton, Back, Checked, WarningFilled } from '@element-plus/icons-vue'
+import { DataAnalysis, User, Document, Menu, ChatDotRound, Bell, SwitchButton, Back, Checked, WarningFilled, Operation } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const mobileSidebarOpen = ref(false)
+
+const closeMobileSidebar = () => {
+  mobileSidebarOpen.value = false
+}
 
 const currentRoute = computed(() => {
   const path = route.path
@@ -132,6 +146,8 @@ const handleLogout = () => {
   display: flex;
   min-height: 100vh;
   background: #f0f2f5;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* 侧边栏 */
@@ -220,6 +236,9 @@ const handleLogout = () => {
   margin-left: 240px;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .admin-header {
@@ -252,5 +271,102 @@ const handleLogout = () => {
 .admin-content {
   flex: 1;
   padding: 24px;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 移动端适配 */
+.sidebar-overlay {
+  display: none;
+}
+
+.menu-toggle {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: #333;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.menu-toggle:hover {
+  background: #f0f0f0;
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+  }
+
+  .admin-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+
+  .admin-main {
+    margin-left: 0;
+  }
+
+  .admin-header {
+    padding: 12px 16px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .admin-header h1 {
+    font-size: 18px;
+  }
+
+  .back-text {
+    display: none;
+  }
+
+  .admin-content {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-header h1 {
+    font-size: 16px;
+  }
+
+  .admin-content {
+    padding: 12px;
+  }
+
+  .sidebar-header {
+    padding: 16px;
+  }
+
+  .nav-item {
+    padding: 12px 20px;
+  }
 }
 </style>

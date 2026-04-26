@@ -145,10 +145,12 @@ const handleRegister = async () => {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
 }
 
 .register-card {
   width: 400px;
+  max-width: 100%;
 }
 
 .register-title {
@@ -160,10 +162,48 @@ const handleRegister = async () => {
 .register-footer {
   text-align: center;
   color: #666;
+  margin-top: 8px;
 }
 
 .register-footer a {
   color: #409eff;
   text-decoration: none;
+  font-weight: 500;
+}
+
+.register-footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .register-container {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 60px;
+  }
+
+  .register-card {
+    width: 100%;
+  }
+
+  .register-card :deep(.el-card__header) {
+    padding: 16px;
+  }
+
+  .register-card :deep(.el-card__body) {
+    padding: 20px 16px;
+  }
+
+  .register-title {
+    font-size: 22px;
+  }
+
+  .register-footer {
+    font-size: 14px;
+  }
+
+  .register-card :deep(.el-form-item) {
+    margin-bottom: 18px;
+  }
 }
 </style>

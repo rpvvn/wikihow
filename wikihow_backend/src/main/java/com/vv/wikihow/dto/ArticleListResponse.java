@@ -23,6 +23,8 @@ public class ArticleListResponse {
     private Integer viewCount;
     private Integer likeCount;
     private Integer status;  // 文章状态: 0草稿/1待审核/2已发布/3已拒绝/4已下架
+    private Integer isOutdated;  // 是否过时: 0否/1是
+    private String outdatedReason;  // 过时原因
     private LocalDateTime createdAt;
 
     public static ArticleListResponse fromArticle(Article article, User author, Category category) {
@@ -37,6 +39,8 @@ public class ArticleListResponse {
         response.setViewCount(article.getViewCount());
         response.setLikeCount(article.getLikeCount());
         response.setStatus(article.getStatus());
+        response.setIsOutdated(article.getIsOutdated());
+        response.setOutdatedReason(article.getOutdatedReason());
         response.setCreatedAt(article.getCreatedAt());
         return response;
     }

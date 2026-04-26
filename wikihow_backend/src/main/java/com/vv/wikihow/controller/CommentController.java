@@ -1,14 +1,15 @@
 package com.vv.wikihow.controller;
 
 import com.vv.wikihow.common.Result;
+import com.vv.wikihow.dto.CommentRequest;
 import com.vv.wikihow.dto.CommentResponse;
 import com.vv.wikihow.security.UserContext;
 import com.vv.wikihow.service.CommentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,20 +24,16 @@ public class CommentController {
     }
 
     @PostMapping("/api/comments")
-    public Result<Void> createComment(@RequestBody Map<String, Object> body) {
-        Long articleId = Long.valueOf(body.get("articleId").toString());
-        String content = body.get("content").toString();
+    public Result<Void> createComment(@Valid @RequestBody CommentRequest request) {
         Long userId = UserContext.getCurrentUserId();
         
         // 检查是否是回复评论
-        Object parentIdObj = body.get("parentId");
-        if (parentIdObj != null) {
-            Long parentId = Long.valueOf(parentIdObj.toString());
-            commentService.createReply(articleId, userId, content, parentId);
+        if (request.getParentId() != null) {
+            commentService.createReply(request.getArticleId(), userId, request.getContent(), request.getParentId());
             return Result.success("回复成功", null);
         }
         
-        commentService.createComment(articleId, userId, content);
+        commentService.createComment(request.getArticleId(), userId, request.getContent());
         return Result.success("评论成功", null);
     }
 

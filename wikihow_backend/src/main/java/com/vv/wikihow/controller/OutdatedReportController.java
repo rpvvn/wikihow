@@ -89,6 +89,9 @@ public class OutdatedReportController {
 
     /**
      * 处理举报
+     * 支持两种处理方式：
+     * 1. 标记过时（handleType=1）：标记文章为过时，发送过时通知
+     * 2. 删除文章（handleType=2）：将文章下架，发送违规删除通知
      */
     @PutMapping("/admin/outdated-reports/{id}/handle")
     @PreAuthorize("hasRole('REVIEWER')")
@@ -96,7 +99,7 @@ public class OutdatedReportController {
                                       @Valid @RequestBody HandleReportRequest request) {
         Long handlerId = UserContext.getCurrentUserId();
         outdatedReportService.handleReport(id, handlerId, request.getStatus(), 
-                request.getComment(), request.getOutdatedReason());
+                request.getHandleType(), request.getComment(), request.getReason());
         return Result.success("处理成功", null);
     }
 
@@ -108,5 +111,26 @@ public class OutdatedReportController {
     public Result<Void> deleteReport(@PathVariable Long id) {
         outdatedReportService.deleteReport(id);
         return Result.success("删除成功", null);
+    }
+
+    /**
+     * 作者申请复核（移除过时标记）
+     */
+    @PostMapping("/articles/{id}/request-review")
+    public Result<Void> requestReview(@PathVariable Long id, 
+                                       @Valid @RequestBody ReviewRequest request) {
+        Long userId = UserContext.getCurrentUserId();
+        outdatedReportService.requestReview(id, userId, request.getReason());
+        return Result.success("复核申请已提交，我们会尽快处理", null);
+    }
+
+    /**
+     * 检查文章是否有待处理的复核申请
+     */
+    @GetMapping("/articles/{id}/review-status")
+    public Result<Boolean> checkReviewStatus(@PathVariable Long id) {
+        Long userId = UserContext.getCurrentUserId();
+        boolean hasPendingReview = outdatedReportService.hasPendingReview(id, userId);
+        return Result.success(hasPendingReview);
     }
 }

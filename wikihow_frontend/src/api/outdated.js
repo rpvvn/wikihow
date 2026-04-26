@@ -57,9 +57,10 @@ export function getReportById(reportId) {
  * 处理举报
  * @param {number} reportId 举报记录ID
  * @param {Object} data 处理数据
- * @param {number} data.status 处理结果: 1已处理（标记过时）/2已忽略
+ * @param {number} data.status 处理结果: 1已处理/2已忽略
+ * @param {number} data.handleType 处理类型: 1标记过时/2删除文章（当status=1时需要）
+ * @param {string} data.reason 过时原因或删除原因（当status=1时需要）
  * @param {string} data.comment 处理备注
- * @param {string} data.outdatedReason 过时原因（当status=1时需要）
  */
 export function handleReport(reportId, data) {
   return request.put(`/admin/outdated-reports/${reportId}/handle`, data)
@@ -71,4 +72,21 @@ export function handleReport(reportId, data) {
  */
 export function deleteOutdatedReport(reportId) {
   return request.delete(`/admin/outdated-reports/${reportId}`)
+}
+
+/**
+ * 作者申请复核（移除过时标记）
+ * @param {number} articleId 文章ID
+ * @param {string} reason 申请原因
+ */
+export function requestReview(articleId, reason) {
+  return request.post(`/articles/${articleId}/request-review`, { reason })
+}
+
+/**
+ * 检查文章是否有待处理的复核申请
+ * @param {number} articleId 文章ID
+ */
+export function checkReviewStatus(articleId) {
+  return request.get(`/articles/${articleId}/review-status`)
 }

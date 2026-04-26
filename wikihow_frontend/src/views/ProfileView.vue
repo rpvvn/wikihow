@@ -99,6 +99,7 @@
           <div class="tab-header">
             <div class="tab-header-left">
               <span class="tab-count">共 {{ filteredArticles.length }} 篇文章</span>
+              <!-- 文章状态筛选器：支持按发布状态和过时状态筛选 -->
               <el-select 
                 v-model="articleStatusFilter" 
                 placeholder="全部状态" 
@@ -111,6 +112,8 @@
                 <el-option label="草稿" :value="0" />
                 <el-option label="待审核" :value="1" />
                 <el-option label="已发布" :value="2" />
+                <!-- 已过时：筛选 is_outdated=1 的文章 -->
+                <el-option label="已过时" value="outdated" />
                 <el-option label="已拒绝" :value="3" />
                 <el-option label="已下架" :value="4" />
               </el-select>
@@ -133,9 +136,17 @@
                   <h3 class="article-title" @click="$router.push(`/article/${article.id}`)">
                     {{ article.title }}
                   </h3>
-                  <el-tag :type="getStatusType(article.status)" size="small" class="status-tag">
-                    {{ getStatusText(article.status) }}
-                  </el-tag>
+                  <!-- 文章状态标签：显示发布状态和过时状态 -->
+                  <div class="article-tags">
+                    <!-- 发布状态标签：草稿/待审核/已发布/已拒绝/已下架 -->
+                    <el-tag :type="getStatusType(article.status)" size="small" class="status-tag">
+                      {{ getStatusText(article.status) }}
+                    </el-tag>
+                    <!-- 过时状态标签：当文章被标记为过时时显示 -->
+                    <el-tag v-if="article.isOutdated" type="warning" size="small" class="status-tag">
+                      已过时
+                    </el-tag>
+                  </div>
                 </div>
                 <p class="article-summary">{{ article.summary }}</p>
                 <div class="article-meta">
@@ -340,6 +351,21 @@
 </template>
 
 <script setup>
+/**
+ * 个人中心页面组件
+ * 
+ * 功能说明：
+ * 1. 个人信息展示与编辑（头像、昵称、简介）
+ * 2. 统计数据展示（发布文章数、总浏览量、获得点赞、我的收藏）
+ * 3. 我的文章管理（查看、编辑、删除、状态筛选）
+ * 4. 我的收藏列表
+ * 5. 账号设置（修改密码）
+ * 6. 离线缓存管理
+ * 
+ * 文章状态说明：
+ * - status: 发布状态（0草稿/1待审核/2已发布/3已拒绝/4已下架）
+ * - isOutdated: 过时状态（独立于发布状态，已发布的文章也可能被标记为过时）
+ */
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -412,16 +438,26 @@ const passwordRules = {
 }
 
 // 筛选后的文章列表
+// 支持按 status（发布状态：0草稿/1待审核/2已发布/3已拒绝/4已下架）和 is_outdated（过时状态）筛选
 const filteredArticles = computed(() => {
   if (articleStatusFilter.value === null || articleStatusFilter.value === undefined) {
     return articles.value
   }
+  
+  // 特殊处理：筛选已过时的文章（is_outdated=1 或 true）
+  // 注意：过时状态独立于发布状态，一篇已发布的文章也可能被标记为过时
+  if (articleStatusFilter.value === 'outdated') {
+    return articles.value.filter(article => article.isOutdated === true || article.isOutdated === 1)
+  }
+  
+  // 按发布状态筛选（status字段）
   return articles.value.filter(article => article.status === articleStatusFilter.value)
 })
 
 // 筛选文章
+// 当筛选条件改变时触发，计算属性 filteredArticles 会自动更新
 const filterArticles = () => {
-  // 计算属性会自动更新，这里可以添加额外逻辑
+  // 计算属性会自动更新，这里可以添加额外逻辑（如日志记录、统计等）
 }
 
 // 格式化日期
@@ -732,7 +768,7 @@ onMounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 200px;
+  height: 220px;
   background: linear-gradient(135deg, #93b874 0%, #6b9b4d 100%);
 }
 
@@ -1012,6 +1048,13 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 
+.article-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .article-title {
   margin: 0;
   font-size: 16px;
@@ -1023,6 +1066,8 @@ onMounted(() => {
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  flex: 1;
+  min-width: 0;
 }
 
 .status-tag {

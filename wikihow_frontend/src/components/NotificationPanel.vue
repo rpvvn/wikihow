@@ -130,6 +130,9 @@
       :title="currentNotification?.title"
       width="480px"
       class="notification-detail-dialog"
+      :modal="true"
+      :append-to-body="true"
+      :close-on-click-modal="true"
       @close="currentNotification = null"
     >
       <div class="detail-content" v-if="currentNotification">
@@ -716,6 +719,29 @@ onMounted(() => {
 }
 
 /* 通知详情弹窗样式 */
+.notification-detail-dialog {
+  border-radius: 8px;
+}
+
+:deep(.notification-detail-dialog .el-dialog__header) {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+:deep(.notification-detail-dialog .el-dialog__body) {
+  padding: 20px;
+}
+
+:deep(.notification-detail-dialog .el-dialog__footer) {
+  padding: 16px 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* 调整遮罩层透明度 */
+:deep(.el-overlay) {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
 .detail-content {
   padding: 0;
 }

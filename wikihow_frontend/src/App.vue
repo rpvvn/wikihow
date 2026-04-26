@@ -1,45 +1,34 @@
-<script setup>
+﻿<script setup>
 import { RouterView, useRoute } from 'vue-router'
 import { computed } from 'vue'
 import AppFooter from '@/components/AppFooter.vue'
 
 const route = useRoute()
 
-// 管理后台页面不显示 Footer
 const showFooter = computed(() => {
-  return !route.path.startsWith('/admin')
+  // 隐藏底部栏的页面：管理后台、登录、注册
+  const hideFooterPaths = ['/admin', '/login', '/register']
+  return !hideFooterPaths.some(path => route.path.startsWith(path))
 })
 </script>
 
 <template>
   <div class="app-container">
-    <RouterView />
+    <main class="app-main">
+      <RouterView />
+    </main>
     <AppFooter v-if="showFooter" />
   </div>
 </template>
 
-<style>
-/* 全局样式重置 */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
+<style scoped>
 .app-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
 }
 </style>

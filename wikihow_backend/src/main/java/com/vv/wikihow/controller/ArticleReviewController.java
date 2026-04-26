@@ -1,9 +1,9 @@
 package com.vv.wikihow.controller;
 
 import com.vv.wikihow.common.Result;
+import com.vv.wikihow.dto.ArticleReviewRequest;
 import com.vv.wikihow.dto.ArticleReviewResponse;
 import com.vv.wikihow.dto.PageResponse;
-import com.vv.wikihow.dto.ReviewRequest;
 import com.vv.wikihow.security.UserContext;
 import com.vv.wikihow.service.ArticleReviewService;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +60,7 @@ public class ArticleReviewController {
      */
     @PutMapping("/admin/reviews/{id}/approve")
     @PreAuthorize("hasRole('REVIEWER')")
-    public Result<Void> approveReview(@PathVariable Long id, @RequestBody(required = false) ReviewRequest request) {
+    public Result<Void> approveReview(@PathVariable Long id, @RequestBody(required = false) ArticleReviewRequest request) {
         Long reviewerId = UserContext.getCurrentUserId();
         String comment = request != null ? request.getComment() : null;
         articleReviewService.approveReview(id, reviewerId, comment);
@@ -72,7 +72,7 @@ public class ArticleReviewController {
      */
     @PutMapping("/admin/reviews/{id}/reject")
     @PreAuthorize("hasRole('REVIEWER')")
-    public Result<Void> rejectReview(@PathVariable Long id, @RequestBody ReviewRequest request) {
+    public Result<Void> rejectReview(@PathVariable Long id, @RequestBody ArticleReviewRequest request) {
         Long reviewerId = UserContext.getCurrentUserId();
         articleReviewService.rejectReview(id, reviewerId, request.getComment());
         return Result.success("审核已拒绝", null);

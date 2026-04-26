@@ -31,6 +31,51 @@
             <p class="outdated-reason" v-if="article.outdatedReason">{{ article.outdatedReason }}</p>
             <p class="outdated-tip">建议您查阅最新资料或联系作者获取更新信息。</p>
           </div>
+          <!-- 作者可以申请复核 -->
+          <div v-if="isAuthor" class="outdated-actions">
+            <el-button
+              v-if="!hasPendingReview"
+              type="warning"
+              size="small"
+              @click="showReviewRequestDialog"
+              :disabled="isOfflineMode"
+            >
+              <el-icon><Edit /></el-icon>
+              申请复核
+            </el-button>
+            <el-tag v-else type="info" effect="plain" size="small">
+              <el-icon><Clock /></el-icon>
+              复核申请处理中
+            </el-tag>
+          </div>
+        </div>
+
+        <!-- 已下架警告横幅 -->
+        <div v-if="article.status === 4 && isAuthor" class="offline-banner">
+          <div class="offline-icon">
+            <el-icon :size="24"><CircleCloseFilled /></el-icon>
+          </div>
+          <div class="offline-content">
+            <h4 class="offline-title">🚫 此文章已被下架</h4>
+            <p class="offline-tip">您的文章因违规内容已被下架。如果您已修改内容，可以申请复核。</p>
+          </div>
+          <!-- 作者可以申请复核 -->
+          <div class="offline-actions">
+            <el-button
+              v-if="!hasPendingReview"
+              type="danger"
+              size="small"
+              @click="showReviewRequestDialog"
+              :disabled="isOfflineMode"
+            >
+              <el-icon><Edit /></el-icon>
+              申请复核
+            </el-button>
+            <el-tag v-else type="info" effect="plain" size="small">
+              <el-icon><Clock /></el-icon>
+              复核申请处理中
+            </el-tag>
+          </div>
         </div>
         <!-- 文章头部 -->
         <div class="article-header">
@@ -88,7 +133,7 @@
                 版本历史
               </el-button>
               <el-button
-                v-if="userStore.isLoggedIn && !article.isOutdated"
+                v-if="userStore.isLoggedIn && !article.isOutdated && !isAuthor"
                 class="report-btn"
                 @click="showReportDialog"
                 :disabled="hasReported || isOfflineMode"
@@ -240,20 +285,77 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 申请复核对话框 -->
+    <el-dialog
+      v-model="reviewRequestDialogVisible"
+      title="申请复核"
+      width="550px"
+      class="review-request-dialog"
+    >
+      <div class="review-request-form">
+        <el-alert type="info" :closable="false" style="margin-bottom: 20px">
+          <template #title>
+            <div style="font-size: 14px">
+              如果您已经更新了文章内容，解决了相关问题，可以申请复核。
+            </div>
+          </template>
+        </el-alert>
+        <p class="review-tip">
+          请详细说明您的复核理由。
+        </p>
+        <el-form :model="reviewRequestForm" :rules="reviewRequestRules" ref="reviewRequestFormRef">
+          <el-form-item label="复核说明" prop="reason">
+            <el-input
+              v-model="reviewRequestForm.reason"
+              type="textarea"
+              :rows="5"
+              placeholder="请描述您的复核申请理由内容"
+              maxlength="500"
+              show-word-limit
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <el-button @click="reviewRequestDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitReviewRequest" :loading="reviewRequestLoading">
+          <el-icon><Promotion /></el-icon>
+          提交申请
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
+/**
+ * 文章详情页组件
+ * 
+ * 功能说明：
+ * 1. 展示文章的完整内容（标题、摘要、步骤、参考文献等）
+ * 2. 支持用户交互（点赞、收藏、评论、分享）
+ * 3. 支持离线缓存和离线浏览
+ * 4. 支持过时内容举报和复核申请
+ * 5. 展示推荐文章列表
+ * 6. 支持版本历史查看（作者和管理员）
+ * 
+ * 权限控制：
+ * - 游客：可浏览文章，不可点赞/收藏/评论/举报
+ * - 普通用户：可浏览、点赞、收藏、评论、举报过时内容
+ * - 文章作者：可申请复核（当文章被标记为过时或下架时）
+ * - 管理员：可查看版本历史
+ */
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { View, Star, Collection, ChatDotRound, Document, Share, CircleCheckFilled, HomeFilled, Clock, WarningFilled, Flag, Download } from '@element-plus/icons-vue'
+import { View, Star, Collection, ChatDotRound, Document, Share, CircleCheckFilled, HomeFilled, Clock, WarningFilled, Flag, Download, Edit, Promotion, CircleCloseFilled } from '@element-plus/icons-vue'
 import AppHeader from '@/components/AppHeader.vue'
 import ArticleStep from '@/components/ArticleStep.vue'
 import CommentList from '@/components/CommentList.vue'
 import { getArticleById, getRandomArticles } from '@/api/article'
 import { toggleLike, toggleFavorite } from '@/api/interaction'
-import { reportOutdated, checkReportStatus } from '@/api/outdated'
+import { reportOutdated, checkReportStatus, requestReview, checkReviewStatus } from '@/api/outdated'
 import { useUserStore } from '@/stores/user'
 import { 
   saveArticleOffline, 
@@ -268,21 +370,36 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
+// ==================== 文章数据状态 ====================
+/** 文章详情数据 */
 const article = ref(null)
+/** 加载状态 */
 const loading = ref(false)
+/** 推荐文章列表 */
 const relatedArticles = ref([])
+
+// ==================== 离线模式状态 ====================
+/** 是否处于离线模式 */
 const isOfflineMode = ref(false)
+/** 文章是否已缓存 */
 const isCached = ref(false)
+/** 当前显示的内容是否来自缓存 */
 const isFromCache = ref(false)
 
-// 举报相关
+// ==================== 举报过时内容相关 ====================
+/** 举报对话框显示状态 */
 const reportDialogVisible = ref(false)
+/** 举报提交加载状态 */
 const reportLoading = ref(false)
+/** 当前用户是否已举报此文章 */
 const hasReported = ref(false)
+/** 举报表单引用 */
 const reportFormRef = ref(null)
+/** 举报表单数据 */
 const reportForm = ref({
   reason: ''
 })
+/** 举报表单验证规则 */
 const reportRules = {
   reason: [
     { required: true, message: '请填写举报原因', trigger: 'blur' },
@@ -290,20 +407,65 @@ const reportRules = {
   ]
 }
 
-// 网络状态监听清理函数
+// ==================== 复核申请相关 ====================
+/** 复核申请对话框显示状态 */
+const reviewRequestDialogVisible = ref(false)
+/** 复核申请提交加载状态 */
+const reviewRequestLoading = ref(false)
+/** 是否有待处理的复核申请 */
+const hasPendingReview = ref(false)
+/** 复核申请表单引用 */
+const reviewRequestFormRef = ref(null)
+/** 复核申请表单数据 */
+const reviewRequestForm = ref({
+  reason: ''
+})
+/** 复核申请表单验证规则 */
+const reviewRequestRules = {
+  reason: [
+    { required: true, message: '请填写更新说明', trigger: 'blur' },
+    { min: 10, message: '更新说明至少10个字符', trigger: 'blur' }
+  ]
+}
+
+// ==================== 网络状态监听 ====================
+/** 网络状态监听清理函数 */
 let cleanupNetworkWatch = null
 
+// ==================== 计算属性 ====================
+
+/**
+ * 判断当前用户是否是文章作者
+ * @returns {boolean} 是否是作者
+ */
+const isAuthor = computed(() => {
+  if (!userStore.isLoggedIn || !article.value) return false
+  return article.value.author?.id === userStore.userInfo?.id
+})
+
+/**
+ * 获取文章难度对应的标签类型
+ * @returns {string} Element Plus 标签类型
+ */
 const difficultyType = computed(() => {
   const map = { EASY: 'success', MEDIUM: 'warning', HARD: 'danger' }
   return map[article.value?.difficulty] || 'info'
 })
 
+/**
+ * 获取文章难度的中文文本
+ * @returns {string} 难度中文描述
+ */
 const difficultyText = computed(() => {
   const map = { EASY: '简单', MEDIUM: '中等', HARD: '困难' }
   return map[article.value?.difficulty] || '中等'
 })
 
-// 判断当前用户是否可以查看版本历史（管理员或文章作者）
+/**
+ * 判断当前用户是否可以查看版本历史
+ * 权限：文章作者或管理员
+ * @returns {boolean} 是否可以查看版本历史
+ */
 const canViewVersionHistory = computed(() => {
   if (!userStore.isLoggedIn || !article.value) return false
   const isAuthor = article.value.author?.id === userStore.userInfo?.id
@@ -311,11 +473,29 @@ const canViewVersionHistory = computed(() => {
   return isAuthor || isAdmin
 })
 
+/**
+ * 格式化时间为本地日期格式
+ * @param {string} time - ISO 时间字符串
+ * @returns {string} 格式化后的日期字符串
+ */
 const formatTime = (time) => {
   if (!time) return ''
   return new Date(time).toLocaleDateString('zh-CN')
 }
 
+// ==================== 核心业务方法 ====================
+
+/**
+ * 加载文章详情
+ * 
+ * 流程说明：
+ * 1. 检查网络状态，如果离线则尝试从缓存加载
+ * 2. 在线模式下从服务器获取最新数据
+ * 3. 检查文章是否已缓存
+ * 4. 如果文章已收藏，自动缓存到本地
+ * 5. 加载推荐文章和用户举报状态
+ * 6. 网络错误时降级到缓存模式
+ */
 const loadArticle = async () => {
   loading.value = true
   isFromCache.value = false
@@ -378,15 +558,32 @@ const loadArticle = async () => {
   }
 }
 
+/**
+ * 检查当前用户的举报状态
+ * 
+ * 功能说明：
+ * 1. 检查用户是否已举报此文章为过时
+ * 2. 如果文章已被标记为过时且当前用户是作者，检查是否有待处理的复核申请
+ */
 const checkUserReportStatus = async () => {
   try {
     const res = await checkReportStatus(route.params.id)
     hasReported.value = res.data
+    
+    // 如果文章被标记为过时且是作者，检查是否有待处理的复核申请
+    if (article.value?.isOutdated && isAuthor.value) {
+      const reviewRes = await checkReviewStatus(route.params.id)
+      hasPendingReview.value = reviewRes.data
+    }
   } catch (error) {
     console.error('检查举报状态失败:', error)
   }
 }
 
+/**
+ * 加载推荐文章列表
+ * 随机获取4篇相关文章
+ */
 const loadRelatedArticles = async () => {
   try {
     const res = await getRandomArticles(route.params.id, 4)
@@ -396,6 +593,14 @@ const loadRelatedArticles = async () => {
   }
 }
 
+// ==================== 用户交互方法 ====================
+
+/**
+ * 处理点赞操作
+ * 
+ * 权限要求：需要登录
+ * 功能说明：切换文章的点赞状态，更新点赞计数
+ */
 const handleLike = async () => {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录')
@@ -414,6 +619,15 @@ const handleLike = async () => {
   }
 }
 
+/**
+ * 处理收藏操作
+ * 
+ * 权限要求：需要登录
+ * 功能说明：
+ * 1. 切换文章的收藏状态
+ * 2. 收藏时自动缓存文章到本地（支持离线查看）
+ * 3. 取消收藏时删除本地缓存
+ */
 const handleFavorite = async () => {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录')
@@ -454,7 +668,13 @@ const handleFavorite = async () => {
   }
 }
 
-// 手动缓存/取消缓存
+/**
+ * 手动切换文章的缓存状态
+ * 
+ * 功能说明：
+ * - 已缓存：清除离线缓存
+ * - 未缓存：保存到离线缓存
+ */
 const handleCacheToggle = async () => {
   if (isOfflineMode.value) {
     ElMessage.warning('离线模式下无法操作')
@@ -477,9 +697,19 @@ const handleCacheToggle = async () => {
   }
 }
 
-// 分享功能相关
+// ==================== 分享功能 ====================
+
+/** 分享成功对话框显示状态 */
 const shareDialogVisible = ref(false)
 
+/**
+ * 处理分享操作
+ * 
+ * 功能说明：
+ * 1. 复制文章链接到剪贴板
+ * 2. 显示分享成功对话框
+ * 3. 如果浏览器不支持 Clipboard API，使用降级方案
+ */
 const handleShare = async () => {
   const shareUrl = window.location.href
   
@@ -504,6 +734,10 @@ const handleShare = async () => {
   }
 }
 
+/**
+ * 跳转到版本历史页面
+ * 权限要求：文章作者或管理员
+ */
 const goToVersions = () => {
   if (isOfflineMode.value) {
     ElMessage.warning('离线模式下无法查看版本历史')
@@ -512,7 +746,12 @@ const goToVersions = () => {
   router.push(`/article/${route.params.id}/versions`)
 }
 
-// 举报过时内容
+// ==================== 举报过时内容 ====================
+
+/**
+ * 显示举报过时内容对话框
+ * 权限要求：需要登录，且不能是文章作者
+ */
 const showReportDialog = () => {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录')
@@ -526,6 +765,15 @@ const showReportDialog = () => {
   reportDialogVisible.value = true
 }
 
+/**
+ * 提交举报过时内容
+ * 
+ * 流程说明：
+ * 1. 验证表单数据
+ * 2. 调用 API 提交举报
+ * 3. 更新举报状态
+ * 4. 关闭对话框
+ */
 const submitReport = async () => {
   if (!reportFormRef.value) return
   
@@ -546,7 +794,71 @@ const submitReport = async () => {
   })
 }
 
-// 网络状态变化处理
+// ==================== 复核申请功能 ====================
+
+/**
+ * 显示复核申请对话框
+ * 
+ * 权限要求：必须是文章作者
+ * 适用场景：文章被标记为过时或已下架时
+ */
+const showReviewRequestDialog = () => {
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  if (isOfflineMode.value) {
+    ElMessage.warning('离线模式下无法申请复核')
+    return
+  }
+  reviewRequestForm.value.reason = ''
+  reviewRequestDialogVisible.value = true
+}
+
+/**
+ * 提交复核申请
+ * 
+ * 流程说明：
+ * 1. 验证表单数据（更新说明至少10个字符）
+ * 2. 调用 API 提交复核申请
+ * 3. 更新复核申请状态
+ * 4. 关闭对话框
+ * 
+ * 业务规则：
+ * - 同一篇文章同时只能有一个待处理的复核申请
+ * - 复核申请需要审核员或管理员处理
+ */
+const submitReviewRequest = async () => {
+  if (!reviewRequestFormRef.value) return
+  
+  await reviewRequestFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    
+    reviewRequestLoading.value = true
+    try {
+      await requestReview(article.value.id, reviewRequestForm.value.reason)
+      ElMessage.success('复核申请已提交，我们会尽快处理')
+      reviewRequestDialogVisible.value = false
+      hasPendingReview.value = true
+    } catch (error) {
+      console.error('申请失败:', error)
+      ElMessage.error(error.message || '申请失败，请稍后重试')
+    } finally {
+      reviewRequestLoading.value = false
+    }
+  })
+}
+
+// ==================== 网络状态监听 ====================
+
+/**
+ * 网络恢复在线时的处理
+ * 
+ * 功能说明：
+ * 1. 更新离线模式状态
+ * 2. 显示网络恢复提示
+ * 3. 重新加载文章以获取最新数据
+ */
 const handleOnline = () => {
   isOfflineMode.value = false
   ElMessage.success('网络已恢复')
@@ -554,11 +866,29 @@ const handleOnline = () => {
   loadArticle()
 }
 
+/**
+ * 网络断开离线时的处理
+ * 
+ * 功能说明：
+ * 1. 更新离线模式状态
+ * 2. 显示离线提示
+ * 3. 如果文章已缓存，继续显示缓存内容
+ */
 const handleOffline = () => {
   isOfflineMode.value = true
   ElMessage.warning('网络已断开，进入离线模式')
 }
 
+// ==================== 生命周期钩子 ====================
+
+/**
+ * 组件挂载时执行
+ * 
+ * 初始化流程：
+ * 1. 加载文章详情
+ * 2. 检查网络状态
+ * 3. 注册网络状态监听器
+ */
 onMounted(() => {
   loadArticle()
   // 监听网络状态
@@ -566,6 +896,42 @@ onMounted(() => {
   cleanupNetworkWatch = watchNetworkStatus(handleOnline, handleOffline)
 })
 
+/**
+ * 监听路由参数变化
+ * 
+ * 问题说明：
+ * 当在同一个组件内跳转到不同的文章（如从 /article/3 到 /article/5）时，
+ * Vue Router 会复用组件实例，不会触发 onMounted，导致页面不更新。
+ * 
+ * 解决方案：
+ * 监听 route.params.id 的变化，当文章 ID 改变时重新加载数据。
+ */
+watch(
+  () => route.params.id,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) {
+      // 重置状态
+      article.value = null
+      relatedArticles.value = []
+      hasReported.value = false
+      hasPendingReview.value = false
+      
+      // 滚动到页面顶部
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      
+      // 重新加载文章
+      loadArticle()
+    }
+  }
+)
+
+/**
+ * 组件卸载时执行
+ * 
+ * 清理工作：
+ * 1. 移除网络状态监听器
+ * 2. 释放资源
+ */
 onUnmounted(() => {
   // 清理网络状态监听
   if (cleanupNetworkWatch) {
@@ -658,12 +1024,15 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-top: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .stats {
   display: flex;
   gap: 20px;
   color: #666;
+  flex-shrink: 0;
 }
 
 .stats span {
@@ -675,6 +1044,8 @@ onUnmounted(() => {
 .actions {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .steps-section,
@@ -742,6 +1113,8 @@ onUnmounted(() => {
   padding: 32px;
   border-radius: 8px;
   margin-bottom: 24px;
+  position: relative;
+  z-index: 0;
 }
 
 .related-section h2 {
@@ -771,6 +1144,42 @@ onUnmounted(() => {
   .related-grid {
     grid-template-columns: 1fr;
   }
+
+  /* 移动端文章操作区域优化 */
+  .article-actions {
+    flex-direction: column;  /* 垂直排列统计和操作按钮 */
+    align-items: stretch;    /* 子元素拉伸填充宽度 */
+    gap: 12px;               /* 元素间距 */
+  }
+
+  /* 统计信息区域（浏览量、评论数） */
+  .stats {
+    justify-content: center; /* 居中显示 */
+    width: 100%;             /* 占满容器宽度 */
+  }
+
+  /* 操作按钮区域（点赞、收藏、分享等） */
+  .actions {
+    width: 100%;             /* 占满容器宽度 */
+    justify-content: center; /* 居中显示按钮组 */
+    gap: 8px;                /* 减小按钮间距 */
+  }
+
+  /* 操作按钮样式调整 */
+  .actions .el-button {
+    flex: 0 1 auto;          /* 允许按钮根据内容自动调整大小 */
+    min-width: 70px;         /* 设置最小宽度 */
+    max-width: 120px;        /* 设置最大宽度防止过宽 */
+    font-size: 12px;         /* 减小字体以适应小屏幕 */
+    padding: 8px 10px;       /* 减小内边距 */
+    white-space: nowrap;     /* 防止文字换行 */
+  }
+  
+  /* 如果按钮文字过长，使用省略号 */
+  .actions .el-button span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .related-card {
@@ -782,12 +1191,16 @@ onUnmounted(() => {
   text-decoration: none;
   transition: all 0.3s ease;
   border: 1px solid #f0f0f0;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
 .related-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   border-color: #93d5dc;
+  z-index: 2;
 }
 
 .related-cover {
@@ -795,6 +1208,7 @@ onUnmounted(() => {
   height: 120px;
   overflow: hidden;
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+  pointer-events: none;
 }
 
 .related-cover img {
@@ -802,6 +1216,7 @@ onUnmounted(() => {
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
+  pointer-events: none;
 }
 
 .related-card:hover .related-cover img {
@@ -819,6 +1234,10 @@ onUnmounted(() => {
 
 .related-info {
   padding: 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
 }
 
 .related-title {
@@ -983,6 +1402,7 @@ onUnmounted(() => {
   border-radius: 12px;
   margin-bottom: 24px;
   box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+  align-items: flex-start;
 }
 
 .outdated-icon {
@@ -1024,6 +1444,72 @@ onUnmounted(() => {
   font-size: 13px;
 }
 
+.outdated-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.outdated-actions .el-button {
+  min-width: 100px;
+}
+
+/* 已下架警告横幅 */
+.offline-banner {
+  display: flex;
+  gap: 16px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #ffe6e6 0%, #ffcccc 100%);
+  border: 1px solid #f44336;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.2);
+  align-items: flex-start;
+}
+
+.offline-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f44336;
+  border-radius: 50%;
+  color: #fff;
+}
+
+.offline-content {
+  flex: 1;
+}
+
+.offline-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #c62828;
+}
+
+.offline-tip {
+  margin: 0;
+  color: #d32f2f;
+  font-size: 13px;
+}
+
+.offline-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.offline-actions .el-button {
+  min-width: 100px;
+}
+
 /* 举报按钮样式 */
 .report-btn {
   background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
@@ -1058,6 +1544,42 @@ onUnmounted(() => {
   border-radius: 8px;
 }
 
+/* 复核申请对话框样式 */
+.review-request-form {
+  padding: 10px 0;
+}
+
+.review-tip {
+  margin: 0 0 16px;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 12px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border-left: 3px solid #409eff;
+}
+
+.review-request-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #409eff 0%, #3a8ee6 100%);
+  color: #fff;
+  border-radius: 8px 8px 0 0;
+  padding: 20px;
+}
+
+.review-request-dialog :deep(.el-dialog__title) {
+  color: #fff;
+  font-weight: 600;
+}
+
+.review-request-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: #fff;
+}
+
+.review-request-dialog :deep(.el-dialog__headerbtn:hover .el-dialog__close) {
+  color: #f0f0f0;
+}
+
 /* 离线模式横幅 */
 .offline-banner {
   display: flex;
@@ -1085,7 +1607,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
 }
-
 .offline-title {
   font-weight: 600;
   color: #1565c0;
